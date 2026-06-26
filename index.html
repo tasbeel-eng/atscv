@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATS Match CV - Notebook-Style CV Tailoring Workspace</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            500: '#8b5cf6', // Vivid Purple/Violet
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                            900: '#4c1d95',
+                        },
+                        midnight: {
+                            900: '#0b0f19',
+                            950: '#05070c',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- PDF.js for parsing and extracting text from client-side PDFs safely -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    </script>
+
+    <!-- html2pdf.js for Direct Instant PDF Downloading -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        .transition-all {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8b5cf6;
+        }
+        /* Lock down desktop layout heights and scroll panels */
+        @media (min-width: 1024px) {
+            .column-height {
+                height: calc(100vh - 76px);
+            }
+        }
+        /* Custom A4 proportions */
+        .a4-preview-frame {
+            aspect-ratio: 210 / 297;
+            width: 100%;
+            max-width: 680px;
+        }
+        /* Circular progress styling for ATS Match score meter */
+        .circle-bg {
+            fill: none;
+            stroke: #1e293b;
+            stroke-width: 3.8;
+        }
+        .circle-progress {
+            fill: none;
+            stroke: #10b981;
+            stroke-width: 3.8;
+            stroke-linecap: round;
+            transition: stroke-dasharray 0.6s ease;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col font-sans overflow-y-auto lg:overflow-hidden bg-midnight-950">
+
+    <header class="bg-midnight-900/90 border-b border-slate-800/80 px-6 py-3.5 flex flex-col sm:flex-row justify-between items-center gap-4 z-10 shrink-0 sticky top-0 backdrop-blur">
+        <div class="flex items-center gap-3">
+            <div class="bg-gradient-to-tr from-brand-600 to-indigo-500 p-2.5 rounded-xl shadow-lg shadow-brand-500/10">
+                <i class="fa-solid fa-book-open text-lg text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-extrabold tracking-tight text-white flex items-center gap-2">
+                    ATS Match CV <span class="text-[10px] font-bold bg-brand-500/20 text-brand-400 px-2 py-0.5 rounded-full border border-brand-500/30">Gemini 2.5 Flash</span>
+                </h1>
+                <p class="text-[11px] text-slate-400 font-medium">Notebook-style CV adaptation & ATS gap analysis</p>
+            </div>
+        </div>
+
+        <!-- API Key Integration Dashboard -->
+        <div class="flex items-center gap-2 bg-midnight-950/80 p-1.5 rounded-xl border border-slate-800 w-full sm:w-auto max-w-md">
+            <div class="relative flex-grow">
+                <i class="fa-solid fa-key absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                <input 
+                    type="password" 
+                    id="apiKeyInput" 
+                    placeholder="Enter Gemini API Key..." 
+                    class="bg-transparent text-[11px] text-slate-100 pl-8 pr-7 py-1.5 w-full sm:w-56 focus:outline-none focus:ring-1 focus:ring-brand-500 rounded-lg transition-all"
+                >
+                <button onclick="toggleKeyVisibility()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">
+                    <i id="keyVisibilityIcon" class="fa-solid fa-eye-slash text-xs"></i>
+                </button>
+            </div>
+            <button 
+                onclick="validateApiKey()" 
+                class="bg-brand-600 hover:bg-brand-500 text-white font-bold text-[11px] px-3.5 py-1.5 rounded-lg shadow-md hover:shadow-brand-500/20 active:scale-95 transition-all flex items-center gap-1.5 shrink-0"
+            >
+                <i class="fa-solid fa-circle-check text-xs"></i> Connect
+            </button>
+            
+            <!-- Connection Status Indicator -->
+            <div class="flex items-center gap-1.5 pl-2 border-l border-slate-800 shrink-0">
+                <span id="statusIndicator" class="relative flex h-2.5 w-2.5">
+                    <span id="statusIndicatorPing" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span id="statusIndicatorDot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                </span>
+                <span id="statusText" class="text-[9px] uppercase font-bold tracking-wider text-red-400">Offline</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Grid (3 Columns on Large Displays) -->
+    <main class="flex-grow flex flex-col lg:flex-row overflow-hidden relative">
+        
+        <!-- ================= LEFT SIDEBAR: Document Upload & Parser (25% Width) ================= -->
+        <aside class="w-full lg:w-1/4 bg-midnight-900/40 border-b lg:border-b-0 lg:border-r border-slate-800/80 flex flex-col shrink-0 overflow-y-auto column-height">
+            <div class="p-5 border-b border-slate-800/60 bg-midnight-900/50">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                    <i class="fa-solid fa-file-arrow-up text-brand-500"></i> Baseline Document
+                </h2>
+                <p class="text-[11px] text-slate-500 mt-1">Configure your active baseline resume.</p>
+            </div>
+
+            <div class="p-5 flex-grow flex flex-col gap-5">
+                <!-- Drag and Drop / Clickable Upload Area -->
+                <div 
+                    id="dropZone"
+                    onclick="triggerFileInputClick()"
+                    class="border-2 border-dashed border-slate-700 hover:border-brand-500/50 bg-midnight-950/50 hover:bg-midnight-900/40 rounded-xl p-5 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 relative group"
+                >
+                    <input 
+                        type="file" 
+                        id="fileUpload" 
+                        accept=".pdf,.txt" 
+                        class="hidden" 
+                        onchange="handleFileUpload(event)"
+                        onclick="event.stopPropagation()"
+                    >
+                    <div class="w-10 h-10 rounded-full bg-midnight-900 flex items-center justify-center border border-slate-800 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-cloud-arrow-up text-lg text-slate-400 group-hover:text-brand-500 transition-colors"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-slate-200">Drag & drop or Click to browse</p>
+                        <p class="text-[9px] text-slate-500 mt-1">Supports PDF or plain text (.txt)</p>
+                    </div>
+                    <button type="button" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-3 py-1.5 rounded-lg border border-slate-700 transition-colors">
+                        Browse Files
+                    </button>
+                </div>
+
+                <!-- Active Upload File Card -->
+                <div id="fileCard" class="hidden bg-midnight-950/80 border border-slate-800 rounded-xl p-3.5 flex items-start gap-3">
+                    <div class="p-2 bg-brand-500/10 border border-brand-500/20 text-brand-500 rounded-lg shrink-0">
+                        <i id="fileIcon" class="fa-solid fa-file-pdf text-base"></i>
+                    </div>
+                    <div class="flex-grow min-w-0">
+                        <p id="fileName" class="text-xs font-semibold text-slate-200 truncate">my-cv-2026.pdf</p>
+                        <p id="fileSize" class="text-[9px] text-slate-500 font-mono">0 KB</p>
+                        
+                        <div class="w-full bg-slate-800 rounded-full h-1 mt-2 overflow-hidden">
+                            <div id="parseProgress" class="bg-brand-500 h-1 rounded-full transition-all duration-300" style="width: 0%;"></div>
+                        </div>
+                        <p id="parseStatus" class="text-[9px] text-slate-400 mt-1.5 flex items-center gap-1">
+                            <i class="fa-solid fa-spinner animate-spin text-[10px]" id="parseStatusIcon"></i> <span id="parseStatusText">Analyzing...</span>
+                        </p>
+                    </div>
+                    <button onclick="resetFile()" class="text-slate-500 hover:text-red-400 transition-colors p-1 shrink-0">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                </div>
+
+                <!-- Raw Text Extraction Fallback & Editor -->
+                <div class="flex-grow flex flex-col min-h-[180px]">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Baseline CV Content</label>
+                        <span id="cvWordCount" class="text-[9px] text-slate-500 font-mono">0 words</span>
+                    </div>
+                    <textarea 
+                        id="rawCvText" 
+                        placeholder="Extracted CV text will display here, or you can paste your details directly..." 
+                        class="w-full flex-grow bg-midnight-950/80 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500 resize-none font-mono leading-relaxed"
+                        oninput="updateWordCount('rawCvText', 'cvWordCount')"
+                    ></textarea>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ================= CENTER PANEL: Document Preview / Edit Canvas (50% Width) ================= -->
+        <section class="w-full lg:w-1/2 flex flex-col bg-midnight-950 overflow-y-auto column-height border-b lg:border-b-0 lg:border-r border-slate-800/80">
+            <!-- Canvas Header -->
+            <div class="bg-midnight-900/60 border-b border-slate-800/60 px-5 py-3 flex justify-between items-center shrink-0 sticky top-0 z-10 backdrop-blur">
+                <div class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-images text-brand-500"></i>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">A4 Document Viewer Workspace</h3>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="setViewMode('viewer')" id="viewBtn" class="bg-slate-800 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-1.5 transition-colors">
+                        <i class="fa-solid fa-eye"></i> Original Preview
+                    </button>
+                    <button onclick="setViewMode('editor')" id="editBtn" class="bg-midnight-950 text-slate-400 text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-slate-800 flex items-center gap-1.5 transition-colors">
+                        <i class="fa-solid fa-pen-to-square"></i> Raw Editor
+                    </button>
+                </div>
+            </div>
+
+            <!-- Preview Workspace Stacked Layout -->
+            <div class="p-5 space-y-6 flex flex-col items-center">
+                
+                <!-- PORTION 1: Original PDF Canvas Frame (A4 Aspect Ratio) -->
+                <div class="w-full flex flex-col items-center" id="viewerPanel">
+                    <h4 class="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-2.5 self-start flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Original Document (Page Bounds)
+                    </h4>
+                    
+                    <div id="viewerContainer" class="w-full bg-midnight-900/50 rounded-2xl border border-slate-800 overflow-hidden flex flex-col items-center justify-center relative min-h-[400px] p-4">
+                        <!-- Default Blank Placeholder -->
+                        <div id="viewerPlaceholder" class="text-center p-8 max-w-xs my-auto">
+                            <div class="w-12 h-12 rounded-xl bg-midnight-950 flex items-center justify-center border border-slate-800 mx-auto mb-3">
+                                <i class="fa-solid fa-file-invoice text-lg text-slate-600"></i>
+                            </div>
+                            <h4 class="text-xs font-semibold text-slate-300">Original Document Preview</h4>
+                            <p class="text-[10px] text-slate-500 mt-1.5">Your baseline CV preview will render as a complete A4-aspect canvas here when uploaded.</p>
+                        </div>
+
+                        <!-- PDF Page View Panel (HTML5 Canvas via PDF.js with manual controls) -->
+                        <div id="pdfCanvasContainer" class="hidden w-full flex flex-col items-center justify-start space-y-3">
+                            <div class="flex items-center gap-3 bg-midnight-950 px-3 py-1.5 rounded-lg border border-slate-800 shadow-md">
+                                <button id="pdfPrevBtn" onclick="changePdfPage(-1)" class="text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 transition-colors p-0.5">
+                                    <i class="fa-solid fa-chevron-left text-xs"></i>
+                                </button>
+                                <span class="text-[10px] text-slate-300 font-mono font-medium">
+                                    Page <span id="pdfPageNum" class="text-brand-500 font-bold">1</span> of <span id="pdfTotalPages" class="text-slate-400">1</span>
+                                </span>
+                                <button id="pdfNextBtn" onclick="changePdfPage(1)" class="text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 transition-colors p-0.5">
+                                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                                </button>
+                            </div>
+                            <div class="w-full overflow-x-auto flex justify-center">
+                                <canvas id="pdfCanvas" class="shadow-2xl rounded-xl border border-slate-800 bg-white a4-preview-frame"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- TXT Document Visualized Frame -->
+                        <div id="txtDocPreview" class="hidden w-full p-6 overflow-y-auto text-left bg-midnight-950 text-slate-300 font-mono text-[11px] leading-relaxed whitespace-pre-wrap rounded-xl min-h-[500px]"></div>
+                    </div>
+                </div>
+
+                <!-- PORTION 2: Floating Action Bar and Trigger Panel -->
+                <div class="w-full bg-midnight-900 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-xl">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-500">
+                            <i class="fa-solid fa-circle-down text-base animate-bounce"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-200">Export & Print Adaptations</h4>
+                            <p class="text-[10px] text-slate-500">Save your tailored resume as an ATS-compatible searchable PDF.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                        <button 
+                            id="btnDownloadPdf"
+                            onclick="downloadTailoredPdf()"
+                            disabled
+                            class="flex-1 sm:flex-initial bg-brand-600 hover:bg-brand-500 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold text-[11px] px-4 py-2.5 rounded-xl shadow-md active:scale-95 disabled:scale-100 transition-all flex items-center justify-center gap-1.5"
+                            title="Directly prints the formatted document, ensuring fully selectable text layers needed for ATS readers."
+                        >
+                            <i class="fa-solid fa-file-pdf"></i> Save as PDF
+                        </button>
+                        <button 
+                            id="btnPreviewUpdated"
+                            onclick="triggerUpdatedCvPreview()"
+                            disabled
+                            class="flex-1 sm:flex-initial bg-slate-800 hover:bg-slate-700 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold text-[11px] px-4 py-2.5 rounded-xl shadow-md border border-slate-700 disabled:border-transparent active:scale-95 disabled:scale-100 transition-all flex items-center justify-center gap-1.5"
+                        >
+                            <i class="fa-solid fa-up-right-from-square"></i> Open Tab
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PORTION 3: Live Tailored A4 Preview Container -->
+                <div class="w-full flex flex-col items-center">
+                    <h4 class="text-[10px] uppercase font-bold tracking-wider text-brand-400 mb-2.5 self-start flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span> Live Tailored Resume (A4 Preview)
+                    </h4>
+                    
+                    <div id="tailoredContainer" class="w-full bg-midnight-900/50 rounded-2xl border border-slate-800 overflow-hidden flex flex-col items-center justify-center relative min-h-[500px]">
+                        <!-- Default Blank Placeholder -->
+                        <div id="tailoredPlaceholder" class="text-center p-8 max-w-xs absolute inset-0 m-auto flex flex-col justify-center items-center">
+                            <div class="w-12 h-12 rounded-xl bg-midnight-950 flex items-center justify-center border border-slate-800 mb-3">
+                                <i class="fa-solid fa-wand-magic-sparkles text-lg text-slate-600"></i>
+                            </div>
+                            <h4 class="text-xs font-semibold text-slate-300">Tailored CV Output Preview</h4>
+                            <p class="text-[10px] text-slate-500 mt-1.5 leading-normal">Your aligned document will dynamically compile into a clean, single-column ATS-friendly page directly here.</p>
+                        </div>
+
+                        <!-- Sandbox Print Ready Resume Frame -->
+                        <iframe id="tailoredPreviewIframe" class="hidden w-full a4-preview-frame bg-white border-0 shadow-2xl rounded-xl"></iframe>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ================= RIGHT SIDEBAR: Job Description & Chat Engine (25% Width) ================= -->
+        <aside class="w-full lg:w-1/4 bg-midnight-900/20 flex flex-col shrink-0 overflow-hidden column-height">
+            <!-- Header Tabs -->
+            <div class="bg-midnight-900/80 border-b border-slate-800/60 flex shrink-0">
+                <button 
+                    onclick="setRightTab('target')" 
+                    id="tabTargetBtn" 
+                    class="flex-1 py-3 px-1 text-[10px] font-bold uppercase tracking-wider text-brand-400 border-b-2 border-brand-500 bg-midnight-950/20 flex items-center justify-center gap-1.5 transition-all"
+                >
+                    <i class="fa-solid fa-bullseye"></i> Target
+                </button>
+                <button 
+                    onclick="setRightTab('chat')" 
+                    id="tabChatBtn" 
+                    class="flex-1 py-3 px-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500 border-b-2 border-transparent hover:text-slate-300 flex items-center justify-center gap-1.5 transition-all"
+                >
+                    <i class="fa-solid fa-comments"></i> Chat
+                </button>
+                <button 
+                    onclick="setRightTab('cover')" 
+                    id="tabCoverBtn" 
+                    class="flex-1 py-3 px-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500 border-b-2 border-transparent hover:text-slate-300 flex items-center justify-center gap-1.5 transition-all"
+                >
+                    <i class="fa-solid fa-envelope-open-text"></i> Cover Letter
+                </button>
+            </div>
+
+            <!-- Tab Content Frame -->
+            <div class="flex-grow flex flex-col overflow-y-auto p-5 gap-4" id="rightTabContent">
+                
+                <!-- TAB 1: Target Role Details -->
+                <div id="targetTab" class="flex-grow flex flex-col gap-4">
+                    
+                    <!-- ATS SCORE INTERACTIVE DISPLAY (Dynamic Gauge Widget) -->
+                    <div id="atsContainerCard" class="bg-midnight-900/70 border border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden transition-all">
+                        <div class="flex justify-between items-center w-full mb-3">
+                            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-chart-line text-brand-500"></i> ATS Match Performance
+                            </h4>
+                            <span id="scoreBadge" class="hidden text-[9px] bg-brand-500/20 text-brand-400 px-2 py-0.5 rounded-full border border-brand-500/30 font-bold uppercase">Ready</span>
+                        </div>
+                        
+                        <div class="flex items-center gap-5 w-full">
+                            <!-- Score Radial Dial -->
+                            <div class="relative w-20 h-20 shrink-0">
+                                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                    <path id="atsProgressCircle" class="circle-progress" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                </svg>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span id="atsScoreValue" class="text-lg font-black text-white leading-none">--</span>
+                                    <span class="text-[8px] text-slate-500 font-bold mt-0.5 uppercase tracking-wider">Score</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Status messaging -->
+                            <div class="flex-grow min-w-0">
+                                <p id="atsVerdict" class="text-xs font-semibold text-slate-300">Awaiting Analysis</p>
+                                <p id="atsBreakdown" class="text-[10px] text-slate-500 mt-1 leading-relaxed">Upload baseline details and job criteria, then click calculate to run full ATS scans.</p>
+                            </div>
+                        </div>
+
+                        <!-- ATS Audit Calculation Trigger Button -->
+                        <button 
+                            id="btnCalcATS"
+                            onclick="calculateATSScore()"
+                            class="w-full mt-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-[10px] uppercase tracking-wider py-2 rounded-xl transition-all flex items-center justify-center gap-1.5"
+                        >
+                            <i class="fa-solid fa-gauge-high"></i> Analyze ATS Score
+                        </button>
+
+                        <!-- Collapsible Skill Audits -->
+                        <div id="skillsAuditSection" class="hidden w-full mt-4 pt-4 border-t border-slate-800/80 space-y-3">
+                            <div>
+                                <h5 class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-check text-emerald-500"></i> Matched Keywords
+                                </h5>
+                                <div id="matchedKeywordsContainer" class="flex flex-wrap gap-1">
+                                    <!-- Badges injected dynamically -->
+                                </div>
+                            </div>
+                            <div>
+                                <h5 class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-exclamation text-rose-500"></i> Missing Targets
+                                </h5>
+                                <div id="missingKeywordsContainer" class="flex flex-wrap gap-1">
+                                    <!-- Badges injected dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-briefcase text-slate-500"></i> Job Posting Specs
+                            </label>
+                            <span id="jdWordCount" class="text-[9px] text-slate-500 font-mono">0 words</span>
+                        </div>
+                        <textarea 
+                            id="targetJd" 
+                            placeholder="Paste the target job details, requirements, description, or criteria here..." 
+                            class="w-full h-44 bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500 resize-none font-sans leading-relaxed"
+                            oninput="updateWordCount('targetJd', 'jdWordCount')"
+                        ></textarea>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                            <i class="fa-solid fa-sliders text-slate-500"></i> Adapt focus parameters
+                        </label>
+                        <select id="alignmentStrategy" class="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500 mb-3">
+                            <option value="balanced">Balanced Alignment (Enhance keywords & structure)</option>
+                            <option value="ats">Strict ATS Optimization (Max density of direct keywords)</option>
+                            <option value="creative">Creative & Human-Centered (Focus on punchy achievements)</option>
+                            <option value="academic">Academic & Technical (Highlight complex research/stacks)</option>
+                        </select>
+                        <input 
+                            type="text" 
+                            id="customFocus" 
+                            placeholder="E.g., 'Emphasize cloud architecture skills'" 
+                            class="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                        >
+                    </div>
+
+                    <button 
+                        id="btnTailorCv"
+                        onclick="runTailoringPipeline()"
+                        class="w-full mt-2 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs py-3.5 rounded-xl shadow-lg hover:shadow-brand-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-brand-500/30"
+                    >
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Process & Align CV
+                    </button>
+                </div>
+
+                <!-- TAB 2: AI Alignment Chat -->
+                <div id="chatTab" class="hidden flex-grow flex flex-col h-full overflow-hidden">
+                    <div id="chatHistory" class="flex-grow overflow-y-auto space-y-4 pr-1 mb-4 flex flex-col">
+                        <!-- Initial AI Message -->
+                        <div class="flex gap-2.5 items-start">
+                            <div class="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 text-brand-400">
+                                <i class="fa-solid fa-robot text-xs"></i>
+                            </div>
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 max-w-[85%] leading-relaxed">
+                                <p>Welcome to the CV Alignment workspace! Once you upload your resume and specify your target job posting, we'll map structural changes here.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Bar -->
+                    <div class="flex items-center gap-2 mt-auto border-t border-slate-800/60 pt-3">
+                        <input 
+                            type="text" 
+                            id="chatInput" 
+                            placeholder="Ask to rewrite sections..." 
+                            class="flex-grow bg-midnight-950/80 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                            onkeydown="if(event.key === 'Enter') sendChatMessage()"
+                        >
+                        <button 
+                            onclick="sendChatMessage()" 
+                            class="bg-brand-600 hover:bg-brand-500 text-white p-2.5 rounded-xl transition-all active:scale-95 border border-brand-500/30 shrink-0"
+                        >
+                            <i class="fa-solid fa-paper-plane text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TAB 3: Tailor Cover Letter Module -->
+                <div id="coverTab" class="hidden flex-grow flex flex-col h-full overflow-hidden">
+                    <div class="space-y-4 flex flex-col h-full">
+                        <div>
+                            <p class="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1 flex items-center gap-1.5">
+                                <i class="fa-solid fa-feather text-brand-400"></i> Custom Cover Letter Tailor
+                            </p>
+                            <p class="text-[11px] text-slate-500">Synthesize a narrative based on your adapted CV & Target job description.</p>
+                        </div>
+
+                        <button 
+                            id="btnGenerateCoverLetter"
+                            onclick="generateCoverLetter()"
+                            class="w-full bg-slate-800 hover:bg-slate-700 disabled:bg-slate-900 disabled:text-slate-600 text-slate-200 font-bold text-xs py-3 rounded-xl border border-slate-700 disabled:border-transparent active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                        >
+                            <i class="fa-solid fa-pencil-alt"></i> Generate Cover Letter
+                        </button>
+
+                        <div class="flex-grow flex flex-col min-h-[150px] relative">
+                            <textarea  
+                                id="coverLetterText" 
+                                readonly
+                                placeholder="Generated professional cover letter will output here..." 
+                                class="w-full flex-grow bg-midnight-950/80 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500 resize-none font-sans leading-relaxed"
+                            ></textarea>
+                        </div>
+
+                        <div class="flex gap-2 shrink-0">
+                            <button 
+                                id="btnDownloadCoverText"
+                                onclick="downloadCoverLetter('txt')"
+                                disabled
+                                class="flex-1 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-900 disabled:text-slate-600 text-slate-300 font-bold text-[11px] py-2.5 rounded-xl border border-slate-700 disabled:border-transparent transition-all flex items-center justify-center gap-1.5"
+                            >
+                                <i class="fa-solid fa-file-export"></i> Export Text
+                            </button>
+                            <button 
+                                id="btnDownloadCoverPdf"
+                                onclick="downloadCoverLetter('pdf')"
+                                disabled
+                                class="flex-1 bg-brand-600 hover:bg-brand-500 disabled:bg-slate-900 disabled:text-slate-600 text-white font-bold text-[11px] py-2.5 rounded-xl shadow-md disabled:shadow-none active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+                            >
+                                <i class="fa-solid fa-print"></i> Print Letter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+    </main>
+
+    <!-- Custom Notification/Toast Overlay -->
+    <div id="notificationToast" class="fixed bottom-6 right-6 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 z-50 flex items-center gap-3 bg-midnight-900 border border-slate-800 px-4 py-3 rounded-xl shadow-2xl max-w-sm">
+        <div id="toastIconContainer" class="p-2 rounded-lg flex items-center justify-center shrink-0">
+            <i id="toastIcon" class="fa-solid text-sm"></i>
+        </div>
+        <div>
+            <h5 id="toastTitle" class="text-xs font-bold text-white">Notification</h5>
+            <p id="toastMessage" class="text-[11px] text-slate-400 mt-0.5 leading-tight">Details go here.</p>
+        </div>
+        <button onclick="dismissToast()" class="text-slate-500 hover:text-slate-300 p-1 ml-auto">
+            <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+    </div>
+
+    <!-- Screen Blocker / Processing Loader Overlay -->
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-midnight-950/80 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div class="bg-midnight-900 border border-slate-800 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl flex flex-col items-center gap-4">
+            <div class="relative w-16 h-16">
+                <!-- Outer spinning loader -->
+                <div class="absolute inset-0 border-4 border-slate-800 border-t-brand-500 rounded-full animate-spin"></div>
+                <!-- Inner sparkling status icon -->
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <i class="fa-solid fa-wand-magic-sparkles text-xl text-brand-400 animate-pulse"></i>
+                </div>
+            </div>
+            <div class="space-y-1">
+                <h4 id="loadingTitle" class="text-sm font-bold text-white">Processing Document</h4>
+                <p id="loadingMessage" class="text-[11px] text-slate-400">Please wait while Gemini analyzes and adapts your resume context...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= STREAMING_CHUNK: Integrating Business logic & API workflows... ================= -->
+    <script>
+        let globalExtractedText = "";
+        let globalTailoredHtml = "";
+        let globalCoverLetterText = "";
+        let pdfDocInstance = null;
+        let pdfCurrentPage = 1;
+        let pdfTotalPagesCount = 1;
+        let isApiKeyConnected = false;
+        
+        const MODEL_ENDPOINT_NAME = "gemini-2.5-flash";
+
+        // Setup Drag & Drop Listeners
+        const dropZone = document.getElementById("dropZone");
+        
+        if (dropZone) {
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('border-brand-500', 'bg-midnight-900/40');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('border-brand-500', 'bg-midnight-900/40');
+                }, false);
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length > 0) {
+                    document.getElementById('fileUpload').files = files;
+                    processDocumentUpload(files[0]);
+                }
+            });
+        }
+
+        function triggerFileInputClick() {
+            document.getElementById("fileUpload").click();
+        }
+
+        function handleFileUpload(e) {
+            const file = e.target.value ? e.target.files[0] : null;
+            if (file) {
+                processDocumentUpload(file);
+            }
+        }
+
+        async function processDocumentUpload(file) {
+            const fileCard = document.getElementById("fileCard");
+            const parseProgress = document.getElementById("parseProgress");
+            const parseStatusIcon = document.getElementById("parseStatusIcon");
+            const parseStatusText = document.getElementById("parseStatusText");
+            const viewerPlaceholder = document.getElementById("viewerPlaceholder");
+            const pdfCanvasContainer = document.getElementById("pdfCanvasContainer");
+            const txtDocPreview = document.getElementById("txtDocPreview");
+
+            // UI Card setup
+            fileCard.classList.remove("hidden");
+            document.getElementById("fileName").textContent = file.name;
+            document.getElementById("fileSize").textContent = (file.size / 1024).toFixed(1) + " KB";
+            
+            // Icon setup
+            const isPdf = file.type === "application/pdf" || file.name.endsWith(".pdf");
+            const fileIcon = document.getElementById("fileIcon");
+            fileIcon.className = isPdf ? "fa-solid fa-file-pdf text-base" : "fa-solid fa-file-lines text-base text-teal-400";
+
+            parseProgress.style.width = "20%";
+            parseStatusIcon.className = "fa-solid fa-spinner animate-spin text-[10px]";
+            parseStatusText.textContent = "Extracting text structure...";
+
+            try {
+                if (isPdf) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    parseProgress.style.width = "40%";
+                    
+                    const typedarray = new Uint8Array(arrayBuffer);
+                    const loadingTask = pdfjsLib.getDocument({data: typedarray});
+                    
+                    pdfDocInstance = await loadingTask.promise;
+                    pdfTotalPagesCount = pdfDocInstance.numPages;
+                    pdfCurrentPage = 1;
+
+                    parseProgress.style.width = "60%";
+                    
+                    // Extract text
+                    let fullExtractedText = "";
+                    for (let pNum = 1; pNum <= pdfTotalPagesCount; pNum++) {
+                        const page = await pdfDocInstance.getPage(pNum);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items.map(item => item.str).join(" ");
+                        fullExtractedText += pageText + "\n";
+                    }
+
+                    globalExtractedText = fullExtractedText.trim();
+                    document.getElementById("rawCvText").value = globalExtractedText;
+                    updateWordCount('rawCvText', 'cvWordCount');
+
+                    parseProgress.style.width = "80%";
+                    
+                    // Render PDF to Canvas
+                    viewerPlaceholder.classList.add("hidden");
+                    txtDocPreview.classList.add("hidden");
+                    pdfCanvasContainer.classList.remove("hidden");
+                    
+                    document.getElementById("pdfTotalPages").textContent = pdfTotalPagesCount;
+                    await renderPdfPageToCanvas(pdfCurrentPage);
+
+                    parseProgress.style.width = "100%";
+                    parseStatusIcon.className = "fa-solid fa-circle-check text-brand-400";
+                    parseStatusText.textContent = "Ready for adaptation";
+                    showToast("PDF parsed successfully", "Baseline text and pages loaded into viewer workspace.", "success");
+
+                } else {
+                    // Plaintext TXT
+                    const text = await file.text();
+                    globalExtractedText = text.trim();
+                    document.getElementById("rawCvText").value = globalExtractedText;
+                    updateWordCount('rawCvText', 'cvWordCount');
+
+                    parseProgress.style.width = "70%";
+                    
+                    viewerPlaceholder.classList.add("hidden");
+                    pdfCanvasContainer.classList.add("hidden");
+                    txtDocPreview.classList.remove("hidden");
+                    txtDocPreview.textContent = globalExtractedText;
+
+                    parseProgress.style.width = "100%";
+                    parseStatusIcon.className = "fa-solid fa-circle-check text-brand-400";
+                    parseStatusText.textContent = "Ready for adaptation";
+                    showToast("Document loaded", "Plaintext document loaded successfully.", "success");
+                }
+            } catch (err) {
+                console.error(err);
+                parseProgress.style.width = "0%";
+                parseStatusIcon.className = "fa-solid fa-circle-exclamation text-red-500";
+                parseStatusText.textContent = "Parsing failed";
+                showToast("Document parser warning", "Failed to parse document text layer automatically. You can manually copy-paste baseline content.", "error");
+            }
+        }
+
+        async function renderPdfPageToCanvas(pageNum) {
+            if (!pdfDocInstance) return;
+            document.getElementById("pdfPageNum").textContent = pageNum;
+            
+            // Enable/disable navigation buttons
+            document.getElementById("pdfPrevBtn").disabled = (pageNum <= 1);
+            document.getElementById("pdfNextBtn").disabled = (pageNum >= pdfTotalPagesCount);
+
+            try {
+                const page = await pdfDocInstance.getPage(pageNum);
+                const scale = 1.5;
+                const viewport = page.getViewport({scale: scale});
+                const canvas = document.getElementById('pdfCanvas');
+                const context = canvas.getContext('2d');
+                
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+                await page.render(renderContext).promise;
+            } catch (err) {
+                console.error("Page render error:", err);
+                showToast("Page render issue", "Encountered a scaling mismatch rendering this page canvas.", "error");
+            }
+        }
+
+        function changePdfPage(offset) {
+            const nextP = pdfCurrentPage + offset;
+            if (nextP >= 1 && nextP <= pdfTotalPagesCount) {
+                pdfCurrentPage = nextP;
+                renderPdfPageToCanvas(pdfCurrentPage);
+            }
+        }
+
+        // CASCADING RESET: Clears ALL data including previews, metrics, cover letters, and chat context as soon as baseline document is deleted.
+        function resetFile() {
+            pdfDocInstance = null;
+            globalExtractedText = "";
+            globalTailoredHtml = "";
+            globalCoverLetterText = "";
+            
+            // Clear input forms
+            document.getElementById("rawCvText").value = "";
+            document.getElementById("fileCard").classList.add("hidden");
+            document.getElementById("fileUpload").value = "";
+            document.getElementById("cvWordCount").textContent = "0 words";
+            document.getElementById("targetJd").value = "";
+            document.getElementById("jdWordCount").textContent = "0 words";
+            document.getElementById("customFocus").value = "";
+            
+            // Clear view panels
+            document.getElementById("pdfCanvasContainer").classList.add("hidden");
+            document.getElementById("txtDocPreview").classList.add("hidden");
+            document.getElementById("viewerPlaceholder").classList.remove("hidden");
+            
+            // Clear Tailored output previews
+            const iframe = document.getElementById("tailoredPreviewIframe");
+            iframe.srcdoc = "";
+            iframe.classList.add("hidden");
+            document.getElementById("tailoredPlaceholder").classList.remove("hidden");
+            
+            // Lock active trigger buttons
+            document.getElementById("btnDownloadPdf").disabled = true;
+            document.getElementById("btnPreviewUpdated").disabled = true;
+            
+            // Reset ATS metrics
+            const progressCircle = document.getElementById("atsProgressCircle");
+            const scoreValue = document.getElementById("atsScoreValue");
+            const verdictText = document.getElementById("atsVerdict");
+            const breakdownText = document.getElementById("atsBreakdown");
+            const badge = document.getElementById("scoreBadge");
+            
+            if (scoreValue) scoreValue.textContent = "--";
+            if (progressCircle) progressCircle.setAttribute("stroke-dasharray", "0, 100");
+            if (verdictText) verdictText.textContent = "Awaiting Analysis";
+            if (breakdownText) breakdownText.textContent = "Upload baseline details and job criteria, then click calculate to run full ATS scans.";
+            if (badge) badge.classList.add("hidden");
+            
+            document.getElementById("matchedKeywordsContainer").innerHTML = "";
+            document.getElementById("missingKeywordsContainer").innerHTML = "";
+            document.getElementById("skillsAuditSection").classList.add("hidden");
+            
+            // Clear Cover Letter text
+            document.getElementById("coverLetterText").value = "";
+            document.getElementById("btnDownloadCoverText").disabled = true;
+            document.getElementById("btnDownloadCoverPdf").disabled = true;
+            
+            // Reset Chat History Panel
+            const chatHistory = document.getElementById("chatHistory");
+            chatHistory.innerHTML = `
+                <div class="flex gap-2.5 items-start">
+                    <div class="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 text-brand-400">
+                        <i class="fa-solid fa-robot text-xs"></i>
+                    </div>
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 max-w-[85%] leading-relaxed">
+                        <p>Welcome to the CV Alignment workspace! Once you upload your resume and specify your target job posting, we'll map structural changes here.</p>
+                    </div>
+                </div>
+            `;
+            
+            showToast("Document Cleared", "Baseline CV content and all associated workspace data have been fully reset.", "info");
+        }
+
+        function toggleKeyVisibility() {
+            const keyInput = document.getElementById("apiKeyInput");
+            const keyIcon = document.getElementById("keyVisibilityIcon");
+            if (keyInput.type === "password") {
+                keyInput.type = "text";
+                keyIcon.className = "fa-solid fa-eye text-xs";
+            } else {
+                keyInput.type = "password";
+                keyIcon.className = "fa-solid fa-eye-slash text-xs";
+            }
+        }
+
+        // ================= STREAMING_CHUNK: Integrating key verification and processing optimizations... =================
+        async function validateApiKey() {
+            const apiKey = document.getElementById("apiKeyInput").value.trim();
+            if (!apiKey) {
+                showToast("Input Required", "Please enter a Gemini API Key to continue.", "error");
+                return;
+            }
+
+            setLoading(true, "Authenticating API Session", "Connecting to Gemini 2.5 Flash gateway...");
+
+            try {
+                const checkUrl = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ENDPOINT_NAME}:generateContent?key=${apiKey}`;
+                const payload = {
+                    contents: [{ parts: [{ text: "ping" }] }]
+                };
+
+                const res = await fetch(checkUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    isApiKeyConnected = true;
+                    
+                    // Update connection UI indicator
+                    const statusDot = document.getElementById("statusIndicatorDot");
+                    const statusIndicator = document.getElementById("statusIndicator");
+                    const statusText = document.getElementById("statusText");
+
+                    if (statusDot) statusDot.className = "relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-lg shadow-emerald-500/50";
+                    if (statusIndicator) {
+                        statusIndicator.innerHTML = `
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span id="statusIndicatorDot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        `;
+                    }
+                    if (statusText) {
+                        statusText.className = "text-[9px] uppercase font-bold tracking-wider text-emerald-400 animate-pulse";
+                        statusText.textContent = "CONNECTED";
+                    }
+
+                    showToast("Validation Successful", "Gemini 2.5 Flash API is valid and fully connected.", "success");
+                } else {
+                    throw new Error("API rejection");
+                }
+            } catch (err) {
+                isApiKeyConnected = false;
+                showToast("Authentication Failed", "Invalid key or connection profile. Check parameters.", "error");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // DYNAMIC ATS SCORE CALCULATION ROUTINE
+        async function calculateATSScore() {
+            const currentCv = document.getElementById("rawCvText").value.trim();
+            const targetJd = document.getElementById("targetJd").value.trim();
+
+            if (!currentCv || !targetJd) {
+                showToast("Inputs Needed", "Both a parsed resume and target job specs are required to run an ATS scan.", "error");
+                return;
+            }
+
+            const apiKey = document.getElementById("apiKeyInput").value.trim();
+            if (!apiKey) {
+                showToast("Key Connection Needed", "Please enter and connect your Gemini API key.", "error");
+                return;
+            }
+
+            setLoading(true, "Scanning ATS Match", "Comparing resume semantics with target keywords...");
+
+            const sysInst = `
+            You are an advanced Applicant Tracking System (ATS) Parser and Match Engine.
+            Review the CV against the provided Job Description.
+            Return a strictly valid JSON response. Do NOT include markdown blocks, notes, or explanations.
+            JSON structure MUST be exactly:
+            {
+              "score": 85,
+              "verdict": "Strong Fit / Good Fit / Gap Identified",
+              "breakdown": "A concise paragraph explaining critical gaps or strengths.",
+              "matchedKeywords": ["React", "TypeScript", "Tailwind CSS"],
+              "missingKeywords": ["Zustand", "CI/CD", "AWS Cloud"]
+            }
+            Ensure the response is purely raw JSON with no wrapping text.
+            `;
+
+            const prompt = `
+            Candidate resume:
+            ===
+            ${currentCv}
+            ===
+
+            Target Job Posting:
+            ===
+            ${targetJd}
+            ===
+            `;
+
+            try {
+                const response = await callGeminiApi(prompt, sysInst);
+                const result = JSON.parse(response.replace(/```json/gi, "").replace(/```/g, "").trim());
+
+                // Update Radial Score Widget
+                const progressCircle = document.getElementById("atsProgressCircle");
+                const scoreValue = document.getElementById("atsScoreValue");
+                const verdictText = document.getElementById("atsVerdict");
+                const breakdownText = document.getElementById("atsBreakdown");
+                const badge = document.getElementById("scoreBadge");
+
+                if (scoreValue) scoreValue.textContent = result.score;
+                if (progressCircle) progressCircle.setAttribute("stroke-dasharray", `${result.score}, 100`);
+                if (verdictText) verdictText.textContent = result.verdict;
+                if (breakdownText) breakdownText.textContent = result.breakdown;
+                if (badge) {
+                    badge.classList.remove("hidden");
+                    badge.textContent = `${result.score}% Match`;
+                }
+
+                // Ingest Matched/Missing badges
+                const matchedBox = document.getElementById("matchedKeywordsContainer");
+                const missingBox = document.getElementById("missingKeywordsContainer");
+                const auditSection = document.getElementById("skillsAuditSection");
+
+                if (matchedBox && missingBox && auditSection) {
+                    matchedBox.innerHTML = "";
+                    missingBox.innerHTML = "";
+                    
+                    result.matchedKeywords.forEach(kw => {
+                        matchedBox.innerHTML += `<span class="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium flex items-center gap-1"><i class="fa-solid fa-check text-[8px]"></i> ${kw}</span>`;
+                    });
+
+                    result.missingKeywords.forEach(kw => {
+                        missingBox.innerHTML += `<span class="text-[9px] bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2 py-0.5 rounded-full font-medium flex items-center gap-1"><i class="fa-solid fa-minus text-[8px]"></i> ${kw}</span>`;
+                    });
+
+                    auditSection.classList.remove("hidden");
+                }
+
+                showToast("ATS Scan Complete", `Your resume scored a ${result.score}% match against requirements. Check gaps below!`, "success");
+            } catch (err) {
+                console.error(err);
+                showToast("ATS Score Warning", "Encountered a layout validation conflict parsing ATS response vectors. Please try again.", "error");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // ================= STREAMING_CHUNK: Structuring the Strict Single-Column ATS Resume Generator Prompt... =================
+        async function runTailoringPipeline() {
+            const currentCv = document.getElementById("rawCvText").value.trim();
+            const targetJd = document.getElementById("targetJd").value.trim();
+            const strategy = document.getElementById("alignmentStrategy").value;
+            const customFocus = document.getElementById("customFocus").value.trim();
+
+            if (!currentCv) {
+                showToast("Baseline Missing", "Please upload or paste your baseline CV contents.", "error");
+                return;
+            }
+            if (!targetJd) {
+                showToast("Target Specs Missing", "Please paste your target job description requirements.", "error");
+                return;
+            }
+
+            const apiKey = document.getElementById("apiKeyInput").value.trim();
+            if (!apiKey) {
+                showToast("Key Connection Needed", "Please enter and connect your Gemini API key.", "error");
+                return;
+            }
+
+            setLoading(true, "Aligning Resume", "Gemini is re-indexing professional experience and optimizing keywords...");
+
+            const sysInst = `
+            You are an elite, professional CV Adaptor and resume writing specialist. 
+            You must align the candidate's baseline resume text directly against the target Job Description specs provided.
+            
+            Strategy Context: ${strategy === 'ats' ? 'Strict maximum ATS density of keywords' : strategy === 'creative' ? 'Punchy achievements and modern flow' : strategy === 'academic' ? 'Detailed stack analysis and project references' : 'Balanced professional adaptation'}.
+            Additional focus constraints: ${customFocus || 'None specified'}.
+
+            CRITICAL ATS LAYOUT REQUIREMENTS:
+            - Output MUST be a SINGLE complete HTML document containing a standard, traditional, single-column resume format.
+            - Include the standard Tailwind CSS script tag inside the head: <script src="https://cdn.tailwindcss.com"><\/script>
+            - Strict Single-Column Flow: Absolutely NO columns, sidebars, tables, floats, grids, or multi-column flex containers. Text must stack from top to bottom in a standard vertical hierarchy. This is crucial so ATS engines read text in correct left-to-right order.
+            - Color Scheme: Professional white background (#ffffff) with pure black (#000000) or very dark charcoal (#1a1a1a) text for standard high contrast and parsing visibility. No shaded block backgrounds or colored section bars.
+            - Bullet Points: For list items, STRICTLY use semantic standard HTML unordered lists (<ul> and <li>). Do NOT use asterisks (*), hyphens (-), emoji characters, or icons for list items. The lists must use Tailwind's visual styling class "list-disc pl-5 space-y-1.5" so standard bullets render clearly.
+            - Graphics & Icons: Absolutely NO icon fonts (FontAwesome), SVG diagrams, stars, rating scales, or colored skill progression charts. Rely exclusively on clean text representation.
+            - Clear Margins & Sections: Build standard sections with bold headings (Name, Summary, Professional Experience, Education, Skills, Certification). Apply a clean thin bottom-border to section headings to make sections distinct.
+            - Direct Output: Do not include introductory notes, markdown wrappers (outside of standard codeblock), or conversational banter. Only output the raw complete HTML document inside a markdown html block.
+            `;
+
+            const prompt = `
+            Candidate baseline resume context:
+            ===
+            ${currentCv}
+            ===
+
+            Target job details:
+            ===
+            ${targetJd}
+            ===
+            
+            Synthesize the tailored single-column standard HTML resume now. Ensure standard HTML list elements are used for highlights.
+            `;
+
+            try {
+                const response = await callGeminiApi(prompt, sysInst);
+                globalTailoredHtml = extractHtml(response);
+
+                // Load inside the A4 Preview frame safely
+                const iframe = document.getElementById("tailoredPreviewIframe");
+                iframe.srcdoc = globalTailoredHtml;
+                
+                document.getElementById("tailoredPlaceholder").classList.add("hidden");
+                iframe.classList.remove("hidden");
+
+                // Enable export actions
+                document.getElementById("btnDownloadPdf").disabled = false;
+                document.getElementById("btnPreviewUpdated").disabled = false;
+
+                showToast("Tailoring Complete", "Resume adapted successfully. Review live A4 preview on center pane.", "success");
+            } catch (err) {
+                console.error(err);
+                showToast("Adaptation Failure", "Error during Gemini synthesis sequence.", "error");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById("chatInput");
+            const query = input.value.trim();
+            if (!query) return;
+
+            const apiKey = document.getElementById("apiKeyInput").value.trim();
+            if (!apiKey) {
+                showToast("Key Connection Needed", "Please connect a valid Gemini API key first.", "error");
+                return;
+            }
+
+            // Append User message to Chat panel
+            appendChatMsg("user", query);
+            input.value = "";
+
+            const baselineCv = document.getElementById("rawCvText").value.trim();
+            const targetJd = document.getElementById("targetJd").value.trim();
+
+            const sysInst = `
+            You are a direct companion workspace CV co-pilot. Keep responses compact, friendly, and highly professional.
+            Provide specific actionable CV optimization advice, rewritten statements, or strategic advice based on the user's details.
+            `;
+
+            const prompt = `
+            Candidate original CV: ${baselineCv || 'Not uploaded yet'}
+            Target Role: ${targetJd || 'Not specified yet'}
+            Current Adapted HTML CV Preview (Reference): ${globalTailoredHtml ? 'Generated & Active' : 'None yet'}
+            User request: "${query}"
+            `;
+
+            try {
+                const ans = await callGeminiApi(prompt, sysInst);
+                appendChatMsg("ai", ans);
+            } catch (err) {
+                appendChatMsg("ai", "Deep apologies, I ran into an authentication or connection bottleneck. Please retry.");
+            }
+        }
+
+        async function generateCoverLetter() {
+            const baselineCv = document.getElementById("rawCvText").value.trim();
+            const targetJd = document.getElementById("targetJd").value.trim();
+
+            if (!baselineCv || !targetJd) {
+                showToast("Prerequisites Missing", "Both a baseline resume and target job spec are needed to draft a cover letter.", "error");
+                return;
+            }
+
+            const apiKey = document.getElementById("apiKeyInput").value.trim();
+            if (!apiKey) {
+                showToast("Key Connection Needed", "Please enter and connect your Gemini API key.", "error");
+                return;
+            }
+
+            setLoading(true, "Drafting Narrative", "Gemini is synthesizing custom letter vectors based on experience alignment...");
+
+            const sysInst = `
+            You are a master executive resume writer. Your task is to draft a clean, modern, and highly persuasive professional Cover Letter.
+            Address the specific hiring values identified inside the target Job Description specs.
+            Draft in a confident, professional human-like tone, ensuring achievements from the candidate's baseline resume are emphasized.
+            
+            CRITICAL REQUIREMENT:
+            - DO NOT include placeholder headers, address lines, contact details metadata, dates or company detail templates at the very top of the cover letter.
+            - Completely skip lines containing text like [Date], [Hiring Manager Name], [Hiring Manager Title], [Company Name], or [Company Address].
+            - Start the letter DIRECTLY with a warm, professional salutation (e.g., 'Dear Hiring Manager,' or 'Dear [Company Name] Team,'), followed immediately by the opening paragraph.
+            - Output should be clean plain text suitable for copying directly.
+            `;
+
+            const prompt = `
+            Candidate Background:
+            ===
+            ${baselineCv}
+            ===
+
+            Target Job Posting Specs:
+            ===
+            ${targetJd}
+            ===
+            
+            Draft the perfect tailored Cover Letter now.
+            `;
+
+            try {
+                const answer = await callGeminiApi(prompt, sysInst);
+                globalCoverLetterText = answer.trim();
+
+                document.getElementById("coverLetterText").value = globalCoverLetterText;
+                
+                // Enable Letter Actions
+                document.getElementById("btnDownloadCoverText").disabled = false;
+                document.getElementById("btnDownloadCoverPdf").disabled = false;
+
+                showToast("Cover Letter Generated", "Draft constructed successfully. Check Cover Letter panel.", "success");
+            } catch (err) {
+                console.error(err);
+                showToast("Drafting Failure", "Cover letter synthesis timed out or failed.", "error");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function extractHtml(response) {
+            let html = response.trim();
+            if (html.includes("```html")) {
+                html = html.split("```html")[1].split("```")[0];
+            } else if (html.includes("```")) {
+                html = html.split("```")[1].split("```")[0];
+            }
+            return html.trim();
+        }
+
+        async function callGeminiApi(promptText, systemInstruction = "") {
+            const apiKey = document.getElementById("apiKeyInput").value.trim();
+            const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ENDPOINT_NAME}:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: promptText }] }]
+            };
+
+            if (systemInstruction) {
+                payload.systemInstruction = {
+                    parts: [{ text: systemInstruction }]
+                };
+            }
+
+            const response = await fetch(targetUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`API returned ${response.status}. Payload: ${errText}`);
+            }
+
+            const data = await response.json();
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        }
+
+        // Output Preview Actions
+        function triggerUpdatedCvPreview() {
+            if (!globalTailoredHtml) return;
+            
+            const newTab = window.open();
+            if (!newTab) {
+                showToast("Pop-up Blocked", "Please enable popup redirection to view print-ready layout.", "error");
+                return;
+            }
+
+            newTab.document.open();
+            newTab.document.write(globalTailoredHtml);
+            newTab.document.close();
+            showToast("CV Loaded in New Tab", "Ready for inspection or native browser printing.", "success");
+        }
+
+        // ================= STREAMING_CHUNK: Refining PDF download mechanics... =================
+        // PROBLEM 1 SOLVED: Save as PDF triggers focused native print layout to preserve vector text layers.
+        function downloadTailoredPdf() {
+            if (!globalTailoredHtml) {
+                showToast("No Content Available", "Generate your tailored resume first before exporting.", "error");
+                return;
+            }
+            
+            const iframe = document.getElementById("tailoredPreviewIframe");
+            if (iframe && iframe.contentWindow) {
+                showToast("Generating Searchable PDF", "Opening the system layout configurator. Ensure 'Destination' is set to 'Save as PDF' to keep the selectable text layer.", "success");
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            } else {
+                showToast("Viewer Blocked", "Failed to access rendering layer. Try opening in a new tab to print.", "error");
+                triggerUpdatedCvPreview();
+            }
+        }
+
+        // Cover Letter Actions
+        function downloadCoverLetter(format) {
+            if (!globalCoverLetterText) return;
+
+            if (format === 'txt') {
+                const blob = new Blob([globalCoverLetterText], {type: "text/plain;charset=utf-8"});
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = "Tailored_Cover_Letter.txt";
+                link.click();
+                showToast("Text Exported", "Plaintext cover letter downloaded.", "success");
+            } else {
+                // Generate and download Cover Letter directly as a PDF immediately
+                showToast("Generating PDF", "Converting cover letter details to A4 PDF document...", "info");
+                
+                const coverElement = document.createElement('div');
+                coverElement.style.padding = "40px";
+                coverElement.style.background = "#ffffff";
+                coverElement.style.color = "#1e293b";
+                coverElement.style.fontFamily = "system-ui, -apple-system, sans-serif";
+                coverElement.style.lineHeight = "1.6";
+                coverElement.style.fontSize = "14px";
+                coverElement.innerHTML = `<div style="white-space: pre-wrap;">${globalCoverLetterText}</div>`;
+
+                const options = {
+                    margin:       15,
+                    filename:     'Tailored_Cover_Letter.pdf',
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2, useCORS: true },
+                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                html2pdf().set(options).from(coverElement).save().then(() => {
+                    showToast("Cover Letter Downloaded", "PDF cover letter file download complete.", "success");
+                }).catch(err => {
+                    console.error(err);
+                    showToast("PDF Export Error", "Opening print view in a safe separate browser tab.", "error");
+                    
+                    const printTab = window.open();
+                    if (!printTab) return;
+                    printTab.document.open();
+                    printTab.document.write(`
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <title>Cover Letter</title>
+                            <style>
+                                body { font-family: system-ui, -apple-system, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; color: #1e293b; }
+                                @media print { .no-print { display: none; } }
+                            </style>
+                        </head>
+                        <body>
+                            <button class="no-print" onclick="window.print()" style="margin-bottom: 20px; padding: 10px 20px; font-weight: bold; background: #8b5cf6; color: white; border: none; border-radius: 8px; cursor: pointer;">Print / Save as PDF</button>
+                            <div style="white-space: pre-wrap;">${globalCoverLetterText}</div>
+                        </body>
+                        </html>
+                    `);
+                    printTab.document.close();
+                });
+            }
+        }
+
+        // Navigation Tabs UI Control
+        function setRightTab(tabName) {
+            const tabs = ['target', 'chat', 'cover'];
+            tabs.forEach(t => {
+                const panel = document.getElementById(`${t}Tab`);
+                const btn = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}Btn`);
+                
+                if (t === tabName) {
+                    panel.classList.remove("hidden");
+                    btn.className = "flex-1 py-3 px-1 text-[10px] font-bold uppercase tracking-wider text-brand-400 border-b-2 border-brand-500 bg-slate-950/20 flex items-center justify-center gap-1.5 transition-all";
+                } else {
+                    panel.classList.add("hidden");
+                    btn.className = "flex-1 py-3 px-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500 border-b-2 border-transparent hover:text-slate-300 flex items-center justify-center gap-1.5 transition-all";
+                }
+            });
+        }
+
+        function setViewMode(mode) {
+            const viewBtn = document.getElementById("viewBtn");
+            const editBtn = document.getElementById("editBtn");
+            const viewerPanel = document.getElementById("viewerPanel");
+            const editTextarea = document.getElementById("rawCvText");
+
+            if (mode === 'viewer') {
+                viewBtn.className = "bg-slate-800 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-1.5 transition-colors";
+                editBtn.className = "bg-slate-950 text-slate-400 text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-slate-800 flex items-center gap-1.5 transition-colors";
+                viewerPanel.classList.remove("hidden");
+            } else {
+                editBtn.className = "bg-slate-800 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-1.5 transition-colors";
+                viewBtn.className = "bg-slate-950 text-slate-400 text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-slate-800 flex items-center gap-1.5 transition-colors";
+                viewerPanel.classList.add("hidden");
+                editTextarea.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // Generic Toast and Loaders UI Helpers
+        function showToast(title, text, type = 'info') {
+            const toast = document.getElementById("notificationToast");
+            const iconContainer = document.getElementById("toastIconContainer");
+            const icon = document.getElementById("toastIcon");
+            
+            document.getElementById("toastTitle").textContent = title;
+            document.getElementById("toastMessage").textContent = text;
+
+            if (type === 'success') {
+                iconContainer.className = "p-2 rounded-lg flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-400";
+                icon.className = "fa-solid fa-circle-check text-sm";
+            } else if (type === 'error') {
+                iconContainer.className = "p-2 rounded-lg flex items-center justify-center shrink-0 bg-red-500/10 text-red-400";
+                icon.className = "fa-solid fa-triangle-exclamation text-sm";
+            } else {
+                iconContainer.className = "p-2 rounded-lg flex items-center justify-center shrink-0 bg-slate-800 text-slate-400";
+                icon.className = "fa-solid fa-info text-sm";
+            }
+
+            toast.classList.remove("translate-y-20", "opacity-0", "pointer-events-none");
+            setTimeout(dismissToast, 4000);
+        }
+
+        function dismissToast() {
+            document.getElementById("notificationToast").classList.add("translate-y-20", "opacity-0", "pointer-events-none");
+        }
+
+        function setLoading(isActive, title = "Processing", message = "Synthesizing vector paths...") {
+            const overlay = document.getElementById("loadingOverlay");
+            if (isActive) {
+                document.getElementById("loadingTitle").textContent = title;
+                document.getElementById("loadingMessage").textContent = message;
+                overlay.classList.remove("hidden");
+            } else {
+                overlay.classList.add("hidden");
+            }
+        }
+
+        // Fast calculations count utility
+        function updateWordCount(textareaId, counterId) {
+            const val = document.getElementById(textareaId).value.trim();
+            const words = val ? val.split(/\s+/).length : 0;
+            document.getElementById(counterId).textContent = words + " words";
+        }
+
+        function appendChatMsg(sender, text) {
+            const history = document.getElementById("chatHistory");
+            const msgRow = document.createElement("div");
+            msgRow.className = "flex gap-2.5 items-start " + (sender === "user" ? "justify-end" : "justify-start");
+
+            const isUser = sender === "user";
+            
+            const avatarHtml = isUser 
+                ? `<div class="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 text-brand-400 order-2"><i class="fa-solid fa-user text-xs"></i></div>`
+                : `<div class="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 text-brand-400"><i class="fa-solid fa-robot text-xs"></i></div>`;
+
+            const textContainerHtml = `
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 max-w-[85%] leading-relaxed ${isUser ? 'border-brand-500/25 bg-brand-950/15' : ''}">
+                    <p class="whitespace-pre-wrap">${text}</p>
+                </div>
+            `;
+
+            msgRow.innerHTML = avatarHtml + textContainerHtml;
+            history.appendChild(msgRow);
+            history.scrollTop = history.scrollHeight;
+        }
+    </script>
+</body>
+</html>
